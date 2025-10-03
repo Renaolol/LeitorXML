@@ -6,6 +6,8 @@ import base64
 from io import BytesIO
 import xml.etree.ElementTree as ET
 import psycopg2
+import pandas as pd
+from decimal import Decimal, InvalidOperation
 load_dotenv()
 # CONSTANTES
 api_key_sieg = os.getenv("api_key_sieg")
@@ -143,3 +145,20 @@ def get_clientes():
     return clientes
 
     print (e)    
+
+def formata_valor(valor):
+    if valor is None or (hasattr(valor, "__float__") and pd.isna(valor)):
+        return "R$ 0,00"
+
+    try:
+        quantia = Decimal(str(valor))
+    except (InvalidOperation, ValueError, TypeError):
+        return "R$ 0,00"
+
+    sinal = "-" if quantia < 0 else ""
+    quantia = abs(quantia)
+
+    bruto = f"{quantia:,.2f}"
+    bruto = bruto.replace(",", "_").replace(".", ",").replace("_", ".")
+
+    return f"{sinal}R$ {bruto}"
