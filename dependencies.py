@@ -5,19 +5,26 @@ import json
 import base64
 from io import BytesIO
 import xml.etree.ElementTree as ET
+import psycopg2
 load_dotenv()
+# CONSTANTES
 api_key_sieg = os.getenv("api_key_sieg")
 ns = {'ns': 'http://www.portalfiscal.inf.br/nfe'}
-def get_xml_sieg():
+
+
+#VARIAVEIS
+
+
+def get_xml_sieg(cnpj,data_inicial,data_final):
     try:
         url=f"https://api.sieg.com/BaixarXmls?api_key={api_key_sieg}"
         payload = {
         "XmlType": 1,
         "Take": 0,
         "Skip": 0,
-        "DataEmissaoInicio": "2025-09-01",
-        "DataEmissaoFim": "2025-09-01",
-        "CnpjDest": "09271377000150",
+        "DataEmissaoInicio": data_inicial.strftime("%Y-%m-%d"),
+        "DataEmissaoFim": data_final.strftime("%Y-%m-%d"),
+        "CnpjDest": cnpj,
         "Downloadevent": False
             }
         headers = {"Content-Type": "application/json"}
@@ -112,21 +119,27 @@ def processa_xml(xml):
             "Chave":chave_nfe,
         })
 
-    return produtos, total_icms_nota, total_notas_fiscais, total_quantidade_produtos
+    return produtos
+def get_clientes():
+    conn = psycopg2.connect(
+    host = "localhost",
+    dbname="ConfrontadorXML",
+    user="postgres",
+    password="0176"
+)
+    cursor = conn.cursor()
+    query="""
+    SELECT razao_social, cnpj FROM clientes ORDER BY razao_social
+"""
+    cursor.execute(query, )
+    rows=cursor.fetchall()
+    clientes =[]
+    for row in rows:
+        cnpj = row[1]
+        nome = row[0]
+        clientes.append([nome,cnpj])
+    cursor.close()
+    conn.close()
+    return clientes
 
-xmls = get_xml_sieg()
-if isinstance(xmls, str): xmls = json.loads(xmls)
-xmls_nfe = xmls if isinstance(xmls,list) else xmls.get("data", [])
-      
-for xml_b64 in xmls_nfe:
-    valor = 0
-    try:
-        try:
-            xml_str = base64.b64decode(xml_b64).decode('utf-8')
-        except Exception as e:
-           print(e)    
-        with BytesIO (xml_str.encode('utf-8')) as xml_file:
-            print("processando")
-            processa_xml(xml_file)
-    except:
-        break
+    print (e)    
