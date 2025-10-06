@@ -17,27 +17,55 @@ ns = {'ns': 'http://www.portalfiscal.inf.br/nfe'}
 #VARIAVEIS
 
 
-def get_xml_sieg(cnpj,data_inicial,data_final):
-    try:
-        url=f"https://api.sieg.com/BaixarXmls?api_key={api_key_sieg}"
+def get_xml_sieg(cnpj, data_inicial, data_final):
+    cont = 0
+    resultados = []
+
+    while True:
+        url = f"https://api.sieg.com/BaixarXmls?api_key={api_key_sieg}"
         payload = {
-        "XmlType": 1,
-        "Take": 0,
-        "Skip": 0,
-        "DataEmissaoInicio": data_inicial.strftime("%Y-%m-%d"),
-        "DataEmissaoFim": data_final.strftime("%Y-%m-%d"),
-        "CnpjDest": cnpj,
-        "Downloadevent": False
-            }
+            "XmlType": 1,
+            "Take": 50,
+            "Skip": (cont * 50),
+            "DataEmissaoInicio": data_inicial.strftime("%Y-%m-%d"),
+            "DataEmissaoFim": data_final.strftime("%Y-%m-%d"),
+            "CnpjDest": cnpj,
+            "Downloadevent": False,
+        }
         headers = {"Content-Type": "application/json"}
-        response = requests.post(url, headers=headers, json = payload)
-        if response.status_code == 200:
-            return response.json()
+
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=30)
+            response.raise_for_status()
+        except requests.RequestException as exc:
+            print(f"Erro na requisição: {exc}")
+            break
+        try:
+            dados = response.json()
+        except ValueError:
+            dados = response.text.strip()
+
+        if isinstance(dados, dict):
+            itens = dados.get("Xmls") or dados.get("xmls") or []
+        elif isinstance(dados, list):
+            itens = dados
+        elif isinstance(dados, str):
+            itens = [item for item in dados.split(",") if item]
         else:
-            print("Erro na API: ", response.status_code, response.text)    
-    except:
-        print(f"Erro")
-    return []    
+            print(f"Formato não suportado: {type(dados).__name__}")
+            break
+
+        if not itens:
+            break
+
+        resultados.extend(itens)
+        cont += 1
+
+        if len(itens) < 50:
+            break
+
+    return resultados   
+ 
 def processa_xml(xml):
     tree = ET.parse(xml)
     root = tree.getroot()
@@ -45,7 +73,8 @@ def processa_xml(xml):
     inf_nfe = root.find(".//ns:infNFe", ns)
     chave_nfe = inf_nfe.attrib.get("Id", "").replace("NFe", "") if inf_nfe is not None else ""
 
-    numero_nota = root.find(".//ns:ide/ns:nNF", ns).text
+    numero_nota_elem = root.find(".//ns:ide/ns:nNF", ns).text
+    numero_nota = int(numero_nota_elem) if numero_nota_elem is not None else 0
     emissor = root.find(".//ns:emit/ns:xNome", ns).text
     cnpj_emissor = root.find(".//ns:emit/ns:CNPJ", ns).text
 

@@ -5,19 +5,16 @@ from io import BytesIO
 import json
 import pandas as pd
 from dependencies import get_xml_sieg, processa_xml, get_clientes,formata_valor
-
 st.set_page_config("LEITOR XML",layout="wide")
 st.title("Leitor de Notas de Entrada")
 st.divider()
-col1,col2,col3,col4 = st.columns([1,2,1,1])
+col1,col2,col3 = st.columns([2,0.5,0.5])
 clientes = get_clientes()
 with col1:
-    pesquisa = st.text_input("Pesquisar: ")
-with col2:
     clientes_select = st.selectbox("Selecione o cliente", clientes)
-with col3:
+with col2:
     data_inicial = st.date_input("Selecione a data inicial",format="DD/MM/YYYY")
-with col4:
+with col3:
     data_final = st.date_input("Selecione a data final",format="DD/MM/YYYY")
 cnpj = clientes_select[1]
 
@@ -36,6 +33,11 @@ with st.form("Produtos"):
                     xml_processado = processa_xml(xml_file)
                     todos_produtos.extend(xml_processado)        
             todos_produtos_df = pd.DataFrame(todos_produtos)
+            if todos_produtos_df.empty:
+                st.warning("Nenhum XML encontrado para o período.")
+                st.stop()
+            if "Valor Correto" not in todos_produtos_df.columns:
+                todos_produtos_df["Valor Correto"] = 0.0
         todos_produtos_df["Conferido"] = False
         todos_produtos_df["Valor Correto R$"]=todos_produtos_df["Valor Correto"].apply(formata_valor)
         #CheckBox para selecionar os que já foram conferidos
@@ -56,4 +58,6 @@ with st.form("Produtos"):
             st.metric("Somatório do ICMS",formata_valor(valor_icms))
         with resumo4:
             st.metric("Somatório do ICMS Monofásico",formata_valor(valor_mono))     
-    st.form_submit_button("",disabled=True)
+    parar = st.form_submit_button("Parar")
+    if parar:
+        st.stop()
