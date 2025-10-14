@@ -8,15 +8,13 @@ import xml.etree.ElementTree as ET
 import psycopg2
 import pandas as pd
 from decimal import Decimal, InvalidOperation
+import datetime as dt
 load_dotenv()
 # CONSTANTES
 api_key_sieg = os.getenv("api_key_sieg")
 ns = {'ns': 'http://www.portalfiscal.inf.br/nfe'}
-
-
+ns_cte = {'ns_cte':'http://www.portalfiscal.inf.br/cte'}
 #VARIAVEIS
-
-
 def get_xml_sieg(cnpj, data_inicial, data_final):
     cont = 0
     resultados = []
@@ -65,7 +63,6 @@ def get_xml_sieg(cnpj, data_inicial, data_final):
             break
 
     return resultados   
- 
 def processa_xml(xml):
     tree = ET.parse(xml)
     root = tree.getroot()
@@ -172,9 +169,6 @@ def get_clientes():
     cursor.close()
     conn.close()
     return clientes
-
-    print (e)    
-
 def formata_valor(valor):
     if valor is None or (hasattr(valor, "__float__") and pd.isna(valor)):
         return "R$ 0,00"
@@ -191,3 +185,136 @@ def formata_valor(valor):
     bruto = bruto.replace(",", "_").replace(".", ",").replace("_", ".")
 
     return f"{sinal}R$ {bruto}"
+def get_xml_ctes(cnpj, data_inicial, data_final):
+    cont = 0
+    resultados = []
+
+    while True:
+        url = f"https://api.sieg.com/BaixarXmls?api_key={api_key_sieg}"
+        payload = {
+            "XmlType": 2,
+            "Take": 50,
+            "Skip": (cont * 50),
+            "DataEmissaoInicio": data_inicial.strftime("%Y-%m-%d"),
+            "DataEmissaoFim": data_final.strftime("%Y-%m-%d"),
+            "CnpjEmit": cnpj,
+            "Downloadevent": False,
+        }
+        headers = {"Content-Type": "application/json"}
+
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=30)
+            response.raise_for_status()
+        except requests.RequestException as exc:
+            print(f"Erro na requisição: {exc}")
+            break
+        try:
+            dados = response.json()
+        except ValueError:
+            dados = response.text.strip()
+
+        if isinstance(dados, dict):
+            itens = dados.get("Xmls") or dados.get("xmls") or []
+        elif isinstance(dados, list):
+            itens = dados
+        elif isinstance(dados, str):
+            itens = [item for item in dados.split(",") if item]
+        else:
+            print(f"Formato não suportado: {type(dados).__name__}")
+            break
+
+        if not itens:
+            break
+
+        resultados.extend(itens)
+        cont += 1
+
+        if len(itens) < 50:
+            break
+
+    return resultados
+def processa_ctes(ctes):
+    cte=[]
+    tree = ET.parse(ctes)
+    root = tree.getroot()
+
+    chave_cte = root.find("./ns_cte:protCTe/ns_cte:infProt/ns_cte:chCTe",ns_cte).text
+    num_cte = root.find(".//ns_cte:ide/ns_cte:nCT",ns_cte).text
+
+    dt_emis_elem = root.find(".//ns_cte:ide/ns_cte:dhEmi", ns_cte)
+    raw = dt_emis_elem.text if dt_emis_elem is not None else None
+
+    if raw:
+        dt_emis = dt.datetime.fromisoformat(raw).strftime("%d/%m/%Y")
+    else:
+        dt_emis = "N/A"
+
+    valor_cte_elem = root.find(".//ns_cte:vPrest/ns_cte:vTPrest",ns_cte)
+    valor_cte = float(valor_cte_elem.text) if valor_cte_elem is not None else 0
+    icms_cte_elem = root.find(".//ns_cte:imp/ns_cte:ICMS//ns_cte:vICMS",ns_cte)
+    icms_cte = float(icms_cte_elem.text) if icms_cte_elem is not None else 0
+    aliq_icms_elem = root.find(".//ns_cte:imp/ns_cte:ICMS//ns_cte:pICMS",ns_cte)
+    aliq_icms = float(aliq_icms_elem.text) if aliq_icms_elem is not None else 0
+    cte.append([chave_cte,dt_emis,num_cte,valor_cte,icms_cte,aliq_icms])
+    return cte
+def get_xml_ctes_eventos(cnpj, data_inicial, data_final):
+    cont = 0
+    resultados = []
+
+    while True:
+        url = f"https://api.sieg.com/BaixarXmls?api_key={api_key_sieg}"
+        payload = {
+            "XmlType": 2,
+            "Take": 50,
+            "Skip": (cont * 50),
+            "DataEmissaoInicio": data_inicial.strftime("%Y-%m-%d"),
+            "DataEmissaoFim": data_final.strftime("%Y-%m-%d"),
+            "CnpjEmit": cnpj,
+            "Downloadevent": True,
+        }
+        headers = {"Content-Type": "application/json"}
+
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=30)
+            response.raise_for_status()
+        except requests.RequestException as exc:
+            print(f"Erro na requisição: {exc}")
+            break
+        try:
+            dados = response.json()
+        except ValueError:
+            dados = response.text.strip()
+
+        if isinstance(dados, dict):
+            itens = dados.get("Xmls") or dados.get("xmls") or []
+        elif isinstance(dados, list):
+            itens = dados
+        elif isinstance(dados, str):
+            itens = [item for item in dados.split(",") if item]
+        else:
+            print(f"Formato não suportado: {type(dados).__name__}")
+            break
+
+        if not itens:
+            break
+
+        resultados.extend(itens)
+        cont += 1
+
+        if len(itens) < 50:
+            break
+    return resultados
+def processa_evento_b64(xml_b64):
+    xml_str = base64.b64decode(xml_b64).decode('utf-8')
+    with BytesIO (xml_str.encode('utf-8')) as xml_file:
+        tree = ET.parse(xml_file)
+    root = tree.getroot()
+    eventos=[]
+    chave_cte_elem = root.find(".//ns_cte:infEvento/ns_cte:chCTe",ns_cte)
+    chave_cte = chave_cte_elem.text if chave_cte_elem is not None else ""
+
+    evento_elem = root.find(".//ns_cte:infEvento/ns_cte:detEvento//ns_cte:descEvento",ns_cte)
+    evento = evento_elem.text if evento_elem is not None else ""
+    return chave_cte,evento
+
+

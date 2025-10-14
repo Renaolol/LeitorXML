@@ -58,6 +58,6 @@ with st.form("Produtos"):
             st.metric("Somatório do ICMS",formata_valor(valor_icms))
         with resumo4:
             st.metric("Somatório do ICMS Monofásico",formata_valor(valor_mono))     
-    parar = st.form_submit_button("Parar")
+    parar = st.form_submit_button("Limpar")
     if parar:
         st.stop()
