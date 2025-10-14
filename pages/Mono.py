@@ -19,6 +19,9 @@ with col3:
     data_final = st.date_input("Insira a data final",width=300,value="2025-09-30",format="DD/MM/YYYY")
 buscar = st.button("Buscar")
 if buscar:
-    monofasico= buscar_dados(codigo,data_inicial,data_final)
-    monofasico_df = pd.DataFrame(monofasico,columns=(['Código da Empresa', 'Nome da Empresa', 'Número da Nota', 'Data de Emissão', 'Código de Acumulação', 'Base de Cálculo', 'Alíquota Fixa', 'Valor do ICMS Monofásico', 'Status do Cód. Ent.']))
-    st.dataframe(monofasico_df)
+    try:
+        monofasico= buscar_dados(codigo,data_inicial,data_final)
+        monofasico_df = pd.DataFrame(monofasico,columns=(['Código da Empresa', 'Nome da Empresa', 'Número da Nota', 'Data de Emissão', 'Código de Acumulação', 'Base de Cálculo', 'Alíquota Fixa', 'Valor do ICMS Monofásico', 'Status do Cód. Ent.']))
+        st.dataframe(monofasico_df)
+    except:
+        st.write("ERRO")    
