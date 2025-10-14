@@ -9,6 +9,7 @@ import psycopg2
 import pandas as pd
 from decimal import Decimal, InvalidOperation
 import datetime as dt
+import pyodbc
 load_dotenv()
 # CONSTANTES
 api_key_sieg = os.getenv("api_key_sieg")
@@ -316,5 +317,51 @@ def processa_evento_b64(xml_b64):
     evento_elem = root.find(".//ns_cte:infEvento/ns_cte:detEvento//ns_cte:descEvento",ns_cte)
     evento = evento_elem.text if evento_elem is not None else ""
     return chave_cte,evento
+def buscar_dados(codigo_empresa, data_inicial, data_final):
+    conn = pyodbc.connect("DSN=ContabilPBI;UID=PBI;PWD=Pbi")
+    cursor = conn.cursor()
+    query = """
+            SELECT
+            c.CODIGO, 
+            c.NOME, 
+            e.nume_ent, 
+            e.dent_ent,
+            e.codi_acu,
+            i.QTDE_TRIB, 
+            i.ALIQ_FIXA,
+            i.VALOR_ICMS_MONOFASICO,
+            CASE 
+                WHEN i.CODI_ENT IS NOT NULL AND i.CODI_EMP IS NOT NULL
+                    AND NOT (i.QTDE_TRIB > 0 AND (i.ALIQ_FIXA = 0 OR i.ALIQ_FIXA IS NULL))
+                THEN 'CORRETA'
+                ELSE 'ERRO'
+            END AS STATUS_CODI_ENT
+        FROM 
+            bethadba.PRVCLIENTES c
+        JOIN 
+            bethadba.efentradas e 
+            ON c.CODIGO = e.codi_emp
+        LEFT JOIN 
+            bethadba.EFMVEPRO_ICMS_MONOFASICO i 
+            ON e.codi_ent = i.CODI_ENT
+            AND e.codi_emp = i.CODI_EMP
+        WHERE 
+            c.CODIGO = ? 
+            AND e.dent_ent >= ? 
+            AND e.dent_ent <= ?
+            AND e.codi_acu IN (118,119,218,219,120)
+            """
+
+    cursor.execute(query, (codigo_empresa, data_inicial, data_final))
+    resultados = cursor.fetchall()
+    #Calculo de ICMS MONO
+    lista = []
+    for row in resultados:
+        lista.append([row[0],row[1], row[2], row[3],row[4], row[5], row[6], row[7],row[8]])
+
+    cursor.close()
+    conn.close()
+
+    return lista
 
 

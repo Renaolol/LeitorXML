@@ -5,9 +5,15 @@ from io import BytesIO
 import json
 import pandas as pd
 from dependencies import get_xml_sieg, processa_xml, get_clientes,formata_valor
-st.set_page_config("LEITOR XML",layout="wide")
+from config_pag import get_ico, get_logo, set_background
+#Configurações da Página
+#-----------------
+st.set_page_config("LEITOR XML",layout="wide",page_icon=get_ico(), initial_sidebar_state="collapsed")
 st.title("Leitor de Notas de Entrada")
+get_logo()
+set_background()
 st.divider()
+#-----------------
 col1,col2,col3 = st.columns([2,0.5,0.5])
 clientes = get_clientes()
 with col1:
