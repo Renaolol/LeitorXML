@@ -15,7 +15,11 @@ load_dotenv()
 api_key_sieg = os.getenv("api_key_sieg")
 ns = {'ns': 'http://www.portalfiscal.inf.br/nfe'}
 ns_cte = {'ns_cte':'http://www.portalfiscal.inf.br/cte'}
-#VARIAVEIS
+
+#FUNÇÕES
+# ----------------------------
+
+#FUNÇÃO QUE FAZ BUSCA DOS XMLS DE NF-E DE ENTRADA VIA API DO SIEG.
 def get_xml_sieg(cnpj, data_inicial, data_final):
     cont = 0
     resultados = []
@@ -64,6 +68,7 @@ def get_xml_sieg(cnpj, data_inicial, data_final):
             break
 
     return resultados   
+# FUNÇÃO QUE PROCESSA OS XMLS QUE VIERAM ATRAVÉS DA API DO SIEG
 def processa_xml(xml):
     tree = ET.parse(xml)
     root = tree.getroot()
@@ -149,6 +154,7 @@ def processa_xml(xml):
         })
 
     return produtos
+#FUNÇÕA PARA BUSCAR OS CLIENTES, COM O NOME E CNPJ, PARA SER UTILIZADO NAS BUSCAS DO API DA SIEG
 def get_clientes():
     conn = psycopg2.connect(
     host = "localhost",
@@ -170,6 +176,7 @@ def get_clientes():
     cursor.close()
     conn.close()
     return clientes
+#FUNÇÃO PARA FORMATAR OS VALORES EM R$ 0,00
 def formata_valor(valor):
     if valor is None or (hasattr(valor, "__float__") and pd.isna(valor)):
         return "R$ 0,00"
@@ -186,6 +193,7 @@ def formata_valor(valor):
     bruto = bruto.replace(",", "_").replace(".", ",").replace("_", ".")
 
     return f"{sinal}R$ {bruto}"
+#FUNÇÃO PARA BUSCAR OS XMLS DE CTES DE SAÍDA DOS CLIENTES VIA API DO SIEG
 def get_xml_ctes(cnpj, data_inicial, data_final):
     cont = 0
     resultados = []
@@ -234,6 +242,7 @@ def get_xml_ctes(cnpj, data_inicial, data_final):
             break
 
     return resultados
+#FUNÇÃO PARA PROCESSAR OS XMLS DE CTES QUE VIERAM ATRÁVES DA API DO SIEG
 def processa_ctes(ctes):
     cte=[]
     tree = ET.parse(ctes)
@@ -258,6 +267,7 @@ def processa_ctes(ctes):
     aliq_icms = float(aliq_icms_elem.text) if aliq_icms_elem is not None else 0
     cte.append([chave_cte,dt_emis,num_cte,valor_cte,icms_cte,aliq_icms])
     return cte
+#FUNÇÃO PARA BUSCAR TAMBÉM OS EVENTOS DOS XMLS DE CTES (MELHOR SER EM UMA BUSCA SEPARADA DO XML NORMAL)
 def get_xml_ctes_eventos(cnpj, data_inicial, data_final):
     cont = 0
     resultados = []
@@ -305,6 +315,7 @@ def get_xml_ctes_eventos(cnpj, data_inicial, data_final):
         if len(itens) < 50:
             break
     return resultados
+#FUNÇÃO PARA PROCESSAR OS EVENTOS DOS XMLS DE CTES
 def processa_evento_b64(xml_b64):
     xml_str = base64.b64decode(xml_b64).decode('utf-8')
     with BytesIO (xml_str.encode('utf-8')) as xml_file:
@@ -317,6 +328,7 @@ def processa_evento_b64(xml_b64):
     evento_elem = root.find(".//ns_cte:infEvento/ns_cte:detEvento//ns_cte:descEvento",ns_cte)
     evento = evento_elem.text if evento_elem is not None else ""
     return chave_cte,evento
+#FUNÇÃO QUE BUSCA DADOS DOS PRODUTOS MONOFÁSICOS DO BANCO DE DADOS DO SISTEMA DOMÍNIO
 def buscar_dados(codigo_empresa, data_inicial, data_final):
     conn = pyodbc.connect("DSN=ContabilPBI;UID=PBI;PWD=Pbi")
     cursor = conn.cursor()
@@ -363,5 +375,34 @@ def buscar_dados(codigo_empresa, data_inicial, data_final):
     conn.close()
 
     return lista
+#FUNÇÃO QUE ENCURTA A BUSCA DOS CAMPOS NO XML COM ROOT.FIND
+def _parse_nfse_valor(root, tag):
+    elem = root.find(f".//{tag}")
+    if elem is None or not elem.text:
+        return 0.0
+    texto = elem.text.strip().replace(".", "").replace(",", ".")
+    try:
+        return float(texto)
+    except ValueError:
+        return 0.0
+#FUNÇÃO QUE PROCESSA XMLS DE NFSE PADRÃO NACIONAL
+def processa_xml_nfse (xml):
+    tree = ET.parse(xml)
+    root = tree.getroot()
 
+    numero = root.find(".//numero_nfse").text
+    chave_elem = root.find(".//chave_acesso_nfse_nacional")
+    chave = chave_elem.text if chave_elem is not None else 0
+    valor_total = _parse_nfse_valor(root, "valor_total")
+    valor_desconto = _parse_nfse_valor(root, "valor_desconto")
+    valor_ir = _parse_nfse_valor(root, "valor_ir")
+    valor_inss = _parse_nfse_valor(root, "valor_inss")
+    valor_contribuicao_social = _parse_nfse_valor(root, "valor_contribuicao_social")
+    valor_rps = _parse_nfse_valor(root, "valor_rps")
+    valor_pis = _parse_nfse_valor(root, "valor_pis")
+    valor_cofins = _parse_nfse_valor(root, "valor_cofins")
+    valor_issrf = _parse_nfse_valor(root,"valor_issrf")
 
+    return numero,chave, valor_total, valor_desconto,valor_ir ,valor_inss, valor_contribuicao_social, valor_rps, valor_pis, valor_cofins, valor_issrf  
+
+# ----------------------------

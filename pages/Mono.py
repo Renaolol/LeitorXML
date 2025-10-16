@@ -2,11 +2,12 @@ import streamlit as st
 import pyodbc
 import pandas as pd
 from dependencies import buscar_dados
-from config_pag import get_logo, set_background
+from config_pag import get_logo, set_background, get_ico
 # Configurações da página
 #------------------------
 get_logo()
 set_background()
+st.set_page_config("MONOFASICOS",get_ico())
 #------------------------
 st.title("Consulta ICMS Monofásico",help="Faz a busca no Banco de dados da Domínio")
 st.divider()

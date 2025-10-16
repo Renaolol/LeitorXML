@@ -5,13 +5,13 @@ from io import BytesIO
 import json
 import pandas as pd
 from dependencies import get_xml_ctes, processa_ctes, get_clientes,formata_valor,get_xml_ctes_eventos,processa_evento_b64
-from config_pag import get_logo, set_background
+from config_pag import get_logo, set_background, get_ico
 # Configurações da página
 #------------------------
 get_logo()
 set_background()
 #------------------------
-st.set_page_config("LEITOR XML CTES",layout="wide")
+st.set_page_config("LEITOR XML CTES",layout="wide",page_icon=get_ico())
 st.title("Leitor de ctes emitidos")
 st.divider()
 col1,col2,col3 = st.columns([2,0.5,0.5])
