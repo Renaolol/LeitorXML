@@ -27,7 +27,7 @@ Aplicacao Streamlit criada para apoiar equipes fiscais na leitura, conciliacao e
 ### Software
 - Python 3.10 ou superior.
 - PostgreSQL acessivel com base `ConfrontadorXML` e usuario com permissao de leitura (ajuste credenciais em `dependencies.py` caso necessario).
-- Fonte de dados Dominio acessivel via DSN ODBC chamado `ContabilPBI` (Windows). Certifique-se de que o driver ODBC adequado esteja instalado e configurado.
+- Fonte de dados Dominio acessivel via DSN ODBC chamado `SuaConexão` (Windows). Certifique-se de que o driver ODBC adequado esteja instalado e configurado.
 - Chave valida para a API Sieg com permissao de download de XMLs.
 
 ### Bibliotecas Python
@@ -39,8 +39,6 @@ Instale-as (de preferencia dentro de um ambiente virtual) com:
 ```bash
 pip install streamlit pandas python-dotenv requests psycopg2-binary pyodbc
 ```
-
-Se desejar, crie um arquivo `requirements.txt` e mantenha a lista acima para facilitar futuras instalacoes.
 
 ## Preparando o projeto
 1. Clone ou compacte o repositorio em sua maquina.
@@ -79,7 +77,7 @@ Mantenha esse arquivo fora do controle de versao para proteger dados sensiveis.
 ## Resolucao de problemas
 - Erros de conexao na API Sieg: confirme se a chave (`api_key_sieg`) e valida e se o servico esta acessivel a partir da rede local.
 - Falha ao listar clientes: valide a conexao PostgreSQL definida em `dependencies.py` (host, base, usuario, senha).
-- Erros com `pyodbc`: verifique se o DSN `ContabilPBI` existe no Painel de Controle ODBC (64 bits) e se o driver correto esta instalado.
+- Erros com `pyodbc`: verifique se o DSN `SuaConexão` existe no Painel de Controle ODBC (64 bits) e se o driver correto esta instalado.
 - Ausencia de imagens ou icone: confirme a presenca de `fundo.png`, `horizontal4.png` e `icone.ico` na raiz; o app exibe um aviso caso o plano de fundo nao seja encontrado.
 
 ## Contribuicao
