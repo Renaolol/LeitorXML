@@ -20,11 +20,16 @@ lista_df = pd.DataFrame(lista,columns=["Número","Chave","Valor Total","Desconto
 iss_retido = lista_df["ISS RETIDO"].sum()
 st.dataframe(lista_df) 
 st.metric("Soma de ISS Retido",formata_valor(iss_retido))
-
+cnpj="12975412000126"
 exportar = st.button("Exportar Domínio")
 if exportar:
     registro=[]
+    registro.append(f"|0000|{cnpj}|")
     for x in lista:
-        registro.append([cria_registro_1000(x[12],x[0],x[11],x[2],x[1]),cria_registro_1020(x[2],x[13],x[10]),
-                         cria_registro_1030(x[14],x[15],x[12],x[13],x[10])])
-    st.write (registro)       
+        registro.extend([cria_registro_1000(x[12],x[0],x[11],x[2],x[1]),
+                        cria_registro_1020(x[2],x[13],x[10]),
+                        cria_registro_1030(x[14],x[15],x[11],x[13],x[10])])
+    registro_df = pd.DataFrame(registro)
+    st.dataframe(registro_df)
+    registro_df.to_csv('ExportadorDomínio.txt',index=False, sep=" ",header=False)
+    

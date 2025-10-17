@@ -380,9 +380,9 @@ def _parse_nfse_valor(root, tag):
     elem = root.find(f".//{tag}")
     if elem is None or not elem.text:
         return 0.0
-    texto = elem.text.strip().replace(".", "").replace(",", ".")
+    texto = elem.text.strip().replace(".", "").replace(".", ",")
     try:
-        return float(texto)
+        return texto
     except ValueError:
         return 0.0
 #FUNÇÃO QUE PROCESSA XMLS DE NFSE PADRÃO NACIONAL
@@ -406,17 +406,17 @@ def processa_xml_nfse (xml):
     cnpj = root.find(".//cpfcnpj").text
     aliquota = root.find(".//aliquota_item_lista_servico").text
     quantidade = root.find(".//unidade_quantidade").text
-    vlr_unit = root.find(".//unidade_valor_unitario").text
+    vlr_unit = _parse_nfse_valor(root,"unidade_valor_unitario")
 
     return numero, chave, valor_total, valor_desconto, valor_ir, valor_inss, valor_contribuicao_social, valor_rps, valor_pis, valor_cofins, valor_issrf , data_emiss, cnpj, aliquota, quantidade, vlr_unit 
 # FUNÇÃO PARA CRIAR O REGISTRO DE IMPORTAÇÃO DA DOMÍNIO PADRÃO COM SEPARADOR (REGISTRO 1000 NOTA FISCAL DE ENTRADA | REGISTRO PAI)
-def cria_registro_1000 (cnpj:int,num_doc:int,data_emissao,valor,chave):
-    return  f"|1000|39|{cnpj}||801|1933||{num_doc}|U||{data_emissao}|{data_emissao}|{valor}|||S||||||||||||||||||||||{valor}|0|||||||||||N||||||||||||||||||||||||||{chave}||||||||||||||||||||"
+def cria_registro_1000 (cnpj:int,num_doc:int,data_emissao,valor:float,chave):
+    return  f"|1000|39|{cnpj}||801|1933||{num_doc}|U||{data_emissao}|{data_emissao}|{valor}|||S||||||||||||||||||||||{valor}|0|||||||||||N||||||||||||||||||||||||||{chave}||||||||||||||||||||||||"
 # FUNÇÃO PARA CRIAR O REGISTRO DE IMPOSTOS (REGISTRO 1020 NOTA FISCAL DE ENTRADA - IMPOSTOS | REGISTRO FILHO)
 def cria_registro_1020(base_calculo:float,aliquota:float,valor:float):
-    return f"|1020|18||{base_calculo}|{aliquota}|{valor}||||||{base_calculo}|||||||||"
+    return f"|1020|18||{base_calculo}|{aliquota}|{valor}|||||{base_calculo}||||||||||"
 # FUNÇÃO PARA CRIAR O REGISTRO DE ESTOQUE (REGISTRO 1030 NOTA FISCAL DE ENTRADA - ESTOQUE | REGISTRO FILHO)
 def cria_registro_1030(quantidade:int,vlr_unit:float,data_emissao,aliquota,vlor_issrf):
-    return f"|1030|557|{quantidade}|{vlr_unit}|||1|{data_emissao}||00|{vlr_unit}||||||||||||||||||||{aliquota}|{vlor_issrf}|1933||||||{vlr_unit}|||||||||||||||||||||||||||03||||||||||||||||||||||||||||||||||||"
+    return f"|1030|557|{quantidade}|{vlr_unit}|||1|{data_emissao}||00|{vlr_unit}||||||||||||||||||||{aliquota}|{vlor_issrf}|1933|||||||||||||||||||||||||||||||||03||||||||||||||||||||||||||||||||||||||||"
 
 # ----------------------------
