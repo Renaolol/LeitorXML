@@ -401,7 +401,8 @@ def processa_xml_nfse (xml):
     valor_rps = _parse_nfse_valor(root, "valor_rps")
     valor_pis = _parse_nfse_valor(root, "valor_pis")
     valor_cofins = _parse_nfse_valor(root, "valor_cofins")
-    valor_issrf = _parse_nfse_valor(root,"valor_issrf")
+    valor_issrf_elem = root.find(".//valor_issrf")
+    valor_issrf = valor_issrf_elem.text if valor_issrf_elem is not None else 0
     data_emiss = root.find(".//data_nfse").text
     cnpj = root.find(".//cpfcnpj").text
     aliquota = root.find(".//aliquota_item_lista_servico").text
@@ -411,7 +412,7 @@ def processa_xml_nfse (xml):
     return numero, chave, valor_total, valor_desconto, valor_ir, valor_inss, valor_contribuicao_social, valor_rps, valor_pis, valor_cofins, valor_issrf , data_emiss, cnpj, aliquota, quantidade, vlr_unit 
 # FUNÇÃO PARA CRIAR O REGISTRO DE IMPORTAÇÃO DA DOMÍNIO PADRÃO COM SEPARADOR (REGISTRO 1000 NOTA FISCAL DE ENTRADA | REGISTRO PAI)
 def cria_registro_1000 (cnpj:int,num_doc:int,data_emissao,valor:float,chave):
-    return  f"|1000|39|{cnpj}||801|1933||{num_doc}|U||{data_emissao}|{data_emissao}|{valor}|||S||||||||||||||||||||||{valor}|0|||||||||||N||||||||||||||||||||||||||{chave}||||||||||||||||||||||||"
+    return  f"|1000|39|{cnpj}||801|1933||{num_doc}|U||{data_emissao}|{data_emissao}|{valor}|||S|||||||||||||||||||||||{valor}|0|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
 # FUNÇÃO PARA CRIAR O REGISTRO DE IMPOSTOS (REGISTRO 1020 NOTA FISCAL DE ENTRADA - IMPOSTOS | REGISTRO FILHO)
 def cria_registro_1020(base_calculo:float,aliquota:float,valor:float):
     return f"|1020|18||{base_calculo}|{aliquota}|{valor}|||||{base_calculo}||||||||||"

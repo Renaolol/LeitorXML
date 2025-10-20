@@ -6,7 +6,7 @@ from config_pag import set_background, get_ico, get_logo
 set_background()
 get_logo()
 st.set_page_config("LEITOR XML NFSE",layout="wide",page_icon=get_ico())
-st.title("Leitor de XML de NFSE padrão nacional")
+st.title("Leitor de XML de NFSE padrão nacional",help="Esse leitor só vai funcionar para XML de NFSE no padrão nacional")
 
 xmls = st.file_uploader("Insira os XMLs",accept_multiple_files=True)
 #Criação da lista que será preenchida
